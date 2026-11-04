@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Coppell GPA Tracker</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#172033;background:#f4f7fb}
+*{box-sizing:border-box}body{margin:0}header{background:#172554;color:#fff;padding:28px 18px}
+main{max-width:1100px;margin:auto;padding:20px 16px 48px}h1{margin:0;font-size:clamp(27px,5vw,38px)}header p{margin:6px 0 0;color:#dbeafe}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:-38px;position:relative}
+.card,.panel{background:#fff;border:1px solid #e2e8f0;border-radius:15px;box-shadow:0 5px 18px #0f172a0b}
+.card{padding:16px}.card small{color:#64748b;font-weight:650}.card strong{display:block;font-size:32px;margin-top:4px}
+.panel{padding:18px;margin-top:16px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+h2{font-size:19px;margin:0 0 4px}.muted{color:#64748b;font-size:13px;margin:0 0 14px}
+button{border:0;border-radius:9px;padding:10px 14px;background:#2563eb;color:white;font-weight:700;cursor:pointer}
+button.secondary{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}button.danger{background:#fff1f2;color:#b91c1c;border:1px solid #fecdd3}
+.grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;align-items:end}
+label{display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:5px}
+input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:white;font:inherit;color:#172033}
+.section{grid-column:1/-1;font-weight:750;color:#334155;margin-top:6px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+table{width:100%;border-collapse:collapse;min-width:700px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #edf1f6;font-size:13px}th{font-size:11px;text-transform:uppercase;color:#64748b}
+.scroll{overflow-x:auto}.hidden{display:none}.empty{text-align:center;color:#64748b;padding:22px}
+.notice{background:#fffbeb;border:1px solid #fde68a;color:#854d0e;border-radius:10px;padding:12px;font-size:13px}
+details{margin-top:12px}summary{cursor:pointer;font-weight:700}
+@media(max-width:700px){.cards{grid-template-columns:1fr 1fr}.cards .card:last-child{grid-column:1/-1}.grid{grid-template-columns:1fr 1fr}.grid .span2{grid-column:span 2}}
+</style>
+</head>
+<body>
+<header><main style="padding:0 16px"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.8">Coppell High School · GPA planning tool</div><h1>My GPA Tracker</h1><p>Estimate your weighted GPA using Coppell High School's published grade-point tables.</p></main></header>
+<main>
+<div class="cards" aria-live="polite">
+ <div class="card"><small>Weighted GPA · 5.0 scale</small><strong id="gpa5">—</strong></div>
+ <div class="card"><small>Converted weighted GPA · 4.0 scale</small><strong id="gpa4">—</strong></div>
+ <div class="card"><small>Completed semester grades</small><strong id="count">0</strong></div>
+</div>
+<section class="panel">
+ <div class="top"><div><h2>Your courses</h2><p class="muted">Enter each course once, with its two marking-period grades and semester exam for each semester.</p></div><button id="add">＋ Add course</button></div>
+ <div id="editor" class="hidden">
+  <div class="grid">
+   <div class="span2"><label for="name">Course name</label><input id="name" placeholder="e.g. English II" maxlength="80"></div>
+   <div><label for="level">Official GPA level</label><select id="level"><option value="4">Level IV</option><option value="3">Level III</option><option value="2" selected>Level II</option><option value="1">Level I</option></select></div>
+   <div><label for="credit">Credit</label><input id="credit" type="number" min=".01" max="10" step=".01" value="1"></div>
+   <div><label for="year">School year</label><input id="year" placeholder="2026–27"></div>
+   <div class="section">Fall semester</div>
+   <div><label for="f1">Marking period 1</label><input id="f1" type="number" min="0" max="100" step=".1"></div>
+   <div><label for="f2">Marking period 2</label><input id="f2" type="number" min="0" max="100" step=".1"></div>
+   <div><label for="fe">Semester exam</label><input id="fe" type="number" min="0" max="100" step=".1"></div>
+   <div class="section">Spring semester</div>
+   <div><label for="s1">Marking period 3</label><input id="s1" type="number" min="0" max="100" step=".1"></div>
+   <div><label for="s2">Marking period 4</label><input id="s2" type="number" min="0" max="100" step=".1"></div>
+   <div><label for="se">Semester exam</label><input id="se" type="number" min="0" max="100" step=".1"></div>
+  </div>
+  <div class="actions"><button id="save">Save course</button><button id="cancel" class="secondary">Cancel</button></div><p id="error" role="alert" style="color:#b91c1c"></p>
+ </div>
+ <div class="scroll"><table><thead><tr><th>Course</th><th>Level</th><th>Fall grade</th><th>Spring grade</th><th>5.0 points</th><th>4.0 points</th><th></th></tr></thead><tbody id="courses"></tbody></table></div>
+ <div id="empty" class="empty">No courses added yet. Select “Add course” to get started.</div>
+</section>
+<section class="panel">
+ <div class="top"><div><h2>Semester breakdown</h2><p class="muted">Only semesters with all three grades entered are included.</p></div><button class="secondary" id="csv">Export CSV</button></div>
+ <div class="scroll"><table><thead><tr><th>Course</th><th>Semester</th><th>Semester average</th><th>Letter</th><th>Level</th><th>5.0 points</th><th>4.0 points</th></tr></thead><tbody id="details"></tbody></table></div>
+</section>
+<section class="panel">
+ <h2>How the calculation works</h2>
+ <p class="muted">Coppell says the two 9-week marking-period grades together make up 90% of the semester grade, and the semester exam makes up 10%. GPA points are assigned to semester averages.</p>
+ <div class="notice"><b>Important:</b> Choose the exact level assigned to the course in the official Coppell course guide. Not every course described as advanced, honors, or dual credit automatically qualifies for the same level. Semester grades below 70 receive 0 GPA points.</div>
+ <details><summary>View Coppell's official grade-point tables</summary>
+ <h3>Weighted 5.0 scale</h3><div class="scroll"><table><thead><tr><th>Semester grade</th><th>Level IV</th><th>Level III</th><th>Level II</th><th>Level I</th></tr></thead><tbody id="table5"></tbody></table></div>
+ <h3>Converted weighted 4.0 scale</h3><div class="scroll"><table><thead><tr><th>Semester grade</th><th>Level IV</th><th>Level III</th><th>Level II</th></tr></thead><tbody id="table4"></tbody></table></div>
+ <p class="muted">Level I does not have a value in Coppell's published converted 4.0 table, so Level I credits are excluded from that converted GPA calculation.</p>
+ </details>
+</section>
+<section class="panel">
+ <h2>Back up your data</h2><p class="muted">Your course information is stored in this browser on this device. It is not sent to GitHub. Download a backup before changing devices or clearing browser data.</p>
+ <div class="actions"><button class="secondary" id="backup">Download backup</button><button class="secondary" id="restore">Restore backup</button><button class="danger" id="clear">Clear all courses</button></div><input id="file" type="file" accept="application/json" class="hidden">
+</section>
+<p class="muted" style="text-align:center;margin:18px 0">Unofficial planning estimate, not an official transcript or class-rank calculation. Confirm course levels and GPA with your counselor.</p>
+<p class="muted" style="text-align:center"><a href="https://www.coppellisd.com/o/chs/page/grading-uil-gpa-classrank-2627" target="_blank" rel="noopener">Coppell High School official GPA and class-rank policy</a></p>
+</main>
+<script>
+(()=>{
+const KEY='coppellGpaTrackerV3';
+const bands=[
+[97,100,'A+',[6,5.5,5,4],[4.6,4.3,4]],
+[94,96,'A',[5.8,5.3,4.8,3.8],[4.4,4.1,3.8]],
+[90,93,'A-',[5.6,5.1,4.6,3.6],[4.2,3.9,3.6]],
+[87,89,'B+',[5.4,4.9,4.4,3.4],[4,3.7,3.4]],
+[84,86,'B',[5.2,4.7,4.2,3.2],[3.8,3.5,3.2]],
+[80,83,'B-',[5,4.5,4,3],[3.6,3.3,3]],
+[77,79,'C+',[4.8,4.3,3.8,2.8],[3.4,3.1,2.8]],
+[74,76,'C',[4.6,4.1,3.6,2.6],[3.2,2.9,2.6]],
+[71,73,'C-',[4.4,3.9,3.4,2.4],[3,2.7,2.4]],
+[70,70,'D',[4.2,3.7,3.2,2.2],[2.8,2.5,2.2]],
+[0,69,'F',[0,0,0,0],[0,0,0]]
+];
+let courses=[],editing=null;
+const $=id=>document.getElementById(id);
+const safe=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&Array.isArray(d.courses))courses=d.courses}catch(e){}}
+function persist(){localStorage.setItem(KEY,JSON.stringify({courses}))}
+function grade(c,sem){const a=sem==='Fall'?c.g[0]:c.g[3],b=sem==='Fall'?c.g[1]:c.g[4],e=sem==='Fall'?c.g[2]:c.g[5];return [a,b,e].every(x=>x!==null&&x!==undefined)?((a+b)/2)*.9+e*.1:null}
+function band(g){return g===null?null:bands.find(b=>g>=b[0]&&g<=b[1])}
+function point(g,level,scale){const b=band(g);if(!b)return null;return scale===5?b[3][4-level]:(level===1?null:b[4][4-level])}
+function calc(scale){let total=0,credits=0;courses.forEach(c=>['Fall','Spring'].forEach(s=>{const g=grade(c,s),p=point(g,c.level,scale);if(p!==null){total+=p*c.credit;credits+=c.credit}}));return credits?total/credits:null}
+function fmt(n){return n===null?'—':n.toFixed(3)}
+function render(){
+ $('gpa5').textContent=fmt(calc(5));$('gpa4').textContent=fmt(calc(4));
+ let details=[];courses.forEach(c=>['Fall','Spring'].forEach(s=>{const g=grade(c,s);if(g!==null)details.push({c,s,g,p5:point(g,c.level,5),p4:point(g,c.level,4)})}));
+ $('count').textContent=details.length;$('empty').classList.toggle('hidden',courses.length>0);
+ $('courses').innerHTML=courses.map(c=>{const f=grade(c,'Fall'),s=grade(c,'Spring'),p5=[point(f,c.level,5),point(s,c.level,5)].filter(x=>x!==null),p4=[point(f,c.level,4),point(s,c.level,4)].filter(x=>x!==null);return `<tr><td><b>${safe(c.name)}</b><br><small>${safe(c.year||'')}</small></td><td>Level ${c.level}</td><td>${f===null?'—':f.toFixed(2)}</td><td>${s===null?'—':s.toFixed(2)}</td><td>${p5.length?p5.map(x=>x.toFixed(1)).join(' / '):'—'}</td><td>${p4.length?p4.map(x=>x.toFixed(1)).join(' / '):'—'}</td><td><button class="secondary" data-edit="${c.id}">Edit</button> <button class="danger" data-del="${c.id}">Delete</button></td></tr>`}).join('');
+ $('details').innerHTML=details.map(d=>`<tr><td>${safe(d.c.name)}</td><td>${d.s}</td><td>${d.g.toFixed(2)}</td><td>${band(d.g)[2]}</td><td>${d.c.level}</td><td>${d.p5.toFixed(1)}</td><td>${d.p4===null?'Not in 4.0 table':d.p4.toFixed(1)}</td></tr>`).join('')||'<tr><td colspan="7" class="empty">Enter both marking periods and the semester exam to calculate a semester.</td></tr>';
+ $('table5').innerHTML=bands.map(b=>`<tr><td>${b[0]}–${b[1]}</td>${b[3].map(x=>`<td>${x.toFixed(1)}</td>`).join('')}</tr>`).join('');
+ $('table4').innerHTML=bands.map(b=>`<tr><td>${b[0]}–${b[1]}</td>${b[4].map(x=>`<td>${x.toFixed(1)}</td>`).join('')}</tr>`).join('');
+}
+function open(c){editing=c?c.id:null;$('editor').classList.remove('hidden');$('name').value=c?.name||'';$('level').value=String(c?.level??2);$('credit').value=c?.credit??1;$('year').value=c?.year||'';['f1','f2','fe','s1','s2','se'].forEach((id,i)=>$(id).value=c?.g?.[i]??'');$('error').textContent=''}
+function close(){$('editor').classList.add('hidden');editing=null}
+$('add').onclick=()=>open(null);$('cancel').onclick=close;
+$('save').onclick=()=>{const name=$('name').value.trim(),credit=Number($('credit').value),g=['f1','f2','fe','s1','s2','se'].map(id=>$(id).value.trim()===''?null:Number($(id).value));if(!name){$('error').textContent='Please enter a course name.';return}if(!Number.isFinite(credit)||credit<=0||credit>10){$('error').textContent='Enter a valid course credit.';return}if(g.some(x=>x!==null&&(!Number.isFinite(x)||x<0||x>100))){$('error').textContent='Grades must be between 0 and 100.';return}const c={id:editing||String(Date.now()),name,level:Number($('level').value),credit,year:$('year').value.trim(),g};const i=courses.findIndex(x=>x.id===editing);if(i<0)courses.push(c);else courses[i]=c;persist();close();render()};
+$('courses').onclick=e=>{const ed=e.target.closest('[data-edit]'),del=e.target.closest('[data-del]');if(ed){const c=courses.find(x=>x.id===ed.dataset.edit);if(c)open(c)}if(del){const c=courses.find(x=>x.id===del.dataset.del);if(c&&confirm('Delete '+c.name+'?')){courses=courses.filter(x=>x.id!==c.id);persist();render()}}};
+function download(name,type,data){const a=document.createElement('a'),u=URL.createObjectURL(new Blob([data],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+$('backup').onclick=()=>download('coppell-gpa-backup.json','application/json',JSON.stringify({courses},null,2));
+$('restore').onclick=()=>$('file').click();
+$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!Array.isArray(d.courses))throw Error();courses=d.courses;persist();render();alert('Backup restored.')}catch(_){alert('That backup file could not be read.')}e.target.value=''};
+$('clear').onclick=()=>{if(confirm('Delete all courses saved in this browser?')){courses=[];persist();render();close()}};
+$('csv').onclick=()=>{const out=[['Course','Level','Credits','School year','Fall MP1','Fall MP2','Fall exam','Fall semester','Spring MP3','Spring MP4','Spring exam','Spring semester','Fall weighted 5.0','Fall converted 4.0','Spring weighted 5.0','Spring converted 4.0']];courses.forEach(c=>{const f=grade(c,'Fall'),s=grade(c,'Spring');out.push([c.name,c.level,c.credit,c.year,...c.g.slice(0,3),f??'',...c.g.slice(3),s??'',point(f,c.level,5)??'',point(f,c.level,4)??'',point(s,c.level,5)??'',point(s,c.level,4)??''])});download('coppell-gpa-export.csv','text/csv',out.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n'))};
+load();render();
+})();
+</script>
+</body></html>
